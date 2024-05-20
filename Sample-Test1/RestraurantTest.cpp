@@ -14,9 +14,15 @@ protected:
 	}
 public:
 	tm getTime(int year, int mon, int day, int hour, int min) {
-		tm result = { 0, min, day, mon - 1, year - 1900, 0, 0, -1 };
+		tm result = { 0, min, hour, day, mon - 1, year - 1900, 0, 0, -1 };
 		mktime(&result);
 		return result;
+	}
+
+	tm plusHour(tm base, int hour) {
+		base.tm_hour += hour;
+		mktime(&base);
+		return base;
 	}
 
 	tm NOT_ON_THE_HOUR;
@@ -60,6 +66,16 @@ TEST_F(BookingItem, checkCapacityOnSameTime) {
 }
 
 TEST_F(BookingItem, checkCapacityOnDifferentTime) {
+	Schedule* schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
+	bookingScheduler.addSchedule(schedule);
+
+	tm differentHour = plusHour(ON_THE_HOUR, 1);
+
+	Schedule* newSchedule = new Schedule{ differentHour, UNDER_CAPACITY, CUSTOMER };
+	bookingScheduler.addSchedule(newSchedule);
+
+	EXPECT_EQ(true, bookingScheduler.hasSchedule(schedule));
+	EXPECT_EQ(true, bookingScheduler.hasSchedule(newSchedule));
 }
 
 TEST_F(BookingItem, checkSendMail) {
