@@ -41,6 +41,7 @@ protected:
 		ON_THE_HOUR = getTime(2021, 3, 26, 9, 0);
 
 		bookingScheduler.setSmsSender(&testableSmsSender);
+		bookingScheduler.setMailSender(&testableMailSender);
 	}
 public:
 	tm getTime(int year, int mon, int day, int hour, int min) {
@@ -58,11 +59,13 @@ public:
 	tm NOT_ON_THE_HOUR;
 	tm ON_THE_HOUR;
 	Customer CUSTOMER{ "Fake name", "010-1234-5678" };
+	Customer CUSTOMER_WITH_MAIL{ "Fake Name", "010-0000-1111", "test@test.com" };
 	const int UNDER_CAPACITY = 1;
 	const int CAPACITY_PER_HOUR = 3;
 
 	BookingScheduler bookingScheduler{ CAPACITY_PER_HOUR };
 	TestableSmsSender testableSmsSender;
+	TestableMailSender testableMailSender;
 };
 
 TEST_F(BookingItem, Exception) {
@@ -118,9 +121,7 @@ TEST_F(BookingItem, checkSendMail) {
 }
 
 TEST_F(BookingItem, notSendEmailToHasNoEmail) {
-	TestableMailSender testableMailSender;
 	Schedule* schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
-	bookingScheduler.setMailSender(&testableMailSender);
 
 	bookingScheduler.addSchedule(schedule);
 
@@ -128,4 +129,9 @@ TEST_F(BookingItem, notSendEmailToHasNoEmail) {
 }
 
 TEST_F(BookingItem, sendEmailToHasEmail) {
+	Schedule* schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER_WITH_MAIL };
+	
+	bookingScheduler.addSchedule(schedule);
+
+	EXPECT_EQ(1, testableMailSender.getCountSendMailMethodIsCalled());
 }
