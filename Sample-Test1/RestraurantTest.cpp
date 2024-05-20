@@ -4,42 +4,58 @@
 #include <ctime>
 #include <stdexcept>
 
-TEST(BookingSchedulerTest, Exception) {
-	tm notOnTheHour = { 0 };
-	notOnTheHour.tm_year = 2021 - 1900;
-	notOnTheHour.tm_mon = 03 - 1;
-	notOnTheHour.tm_mday = 26;
-	notOnTheHour.tm_hour = 9;
-	notOnTheHour.tm_min = 5;
-	notOnTheHour.tm_isdst = -1;
-	mktime(&notOnTheHour);
+using namespace testing;
 
-	Customer customer{ "Fake name", "010-1234-5678" };
-	Schedule* schedule = new Schedule{ notOnTheHour, 1, customer };
-	BookingScheduler bookingScheduler{ 3 };
+class BookingItem : public Test {
+protected:
+	void SetUp() override {
+		NOT_ON_THE_HOUR = getTime(2021, 3, 26, 9, 5);
+		ON_THE_HOUR = getTime(2021, 3, 26, 9, 0);
+	}
+public:
+	tm getTime(int year, int mon, int day, int hour, int min) {
+		tm result = { 0, min, day, mon - 1, year - 1900, 0, 0, -1 };
+		mktime(&result);
+		return result;
+	}
+
+	tm NOT_ON_THE_HOUR;
+	tm ON_THE_HOUR;
+	Customer CUSTOMER{ "Fake name", "010-1234-5678" };
+	const int UNDER_CAPACITY = 1;
+	const int CAPACITY_PER_HOUR = 3;
+
+	BookingScheduler bookingScheduler{ CAPACITY_PER_HOUR };
+};
+
+TEST_F(BookingItem, Exception) {
+	Schedule* schedule = new Schedule{ NOT_ON_THE_HOUR, UNDER_CAPACITY, CUSTOMER };
 
 	EXPECT_THROW({
 		bookingScheduler.addSchedule(schedule);
 		}, std::runtime_error);
-	EXPECT_EQ(1, 1);
 }
 
-TEST(BookingSchedulerTest, Normal) {
-	tm notOnTheHour = { 0 };
-	notOnTheHour.tm_year = 2021 - 1900;
-	notOnTheHour.tm_mon = 03 - 1;
-	notOnTheHour.tm_mday = 26;
-	notOnTheHour.tm_hour = 9;
-	notOnTheHour.tm_min = 0;
-	notOnTheHour.tm_isdst = -1;
-	mktime(&notOnTheHour);
-
-	Customer customer{ "Fake name", "010-1234-5678" };
-	Schedule* schedule = new Schedule{ notOnTheHour, 1, customer };
-	BookingScheduler bookingScheduler{ 3 };
+TEST_F(BookingItem, Normal) {
+	Schedule* schedule = new Schedule{ ON_THE_HOUR, UNDER_CAPACITY, CUSTOMER };
 
 	
 	bookingScheduler.addSchedule(schedule);
 
 	EXPECT_EQ(true, bookingScheduler.hasSchedule(schedule));
+}
+
+TEST_F(BookingItem, checkCapacityOnSameTime) {
+}
+
+TEST_F(BookingItem, checkCapacityOnDifferentTime) {
+}
+
+TEST_F(BookingItem, checkSendMail) {
+}
+
+TEST_F(BookingItem, notSendEmailToHasNoEmail) {
+}
+
+TEST_F(BookingItem, sendEmailToHasEmail) {
 }
