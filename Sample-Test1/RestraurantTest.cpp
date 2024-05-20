@@ -6,6 +6,40 @@
 
 using namespace testing;
 
+class SundayBookingScheduler : public BookingScheduler {
+public:
+	SundayBookingScheduler(int capacityPerHour) :
+		BookingScheduler{capacityPerHour}
+	{}
+
+	time_t getNow() override {
+		return getTime(2021, 3, 28, 17, 0);
+	}
+
+private:
+	time_t getTime(int year, int mon, int day, int hour, int min) {
+		tm result = { 0, min, hour, day, mon - 1, year - 1900, 0, 0, -1 };
+		return mktime(&result);
+	}
+};
+
+class MondayBookingScheduler : public BookingScheduler {
+public:
+	MondayBookingScheduler(int capacityPerHour) :
+		BookingScheduler{ capacityPerHour }
+	{}
+
+	time_t getNow() override {
+		return getTime(2024, 6, 3, 17, 0);
+	}
+
+private:
+	time_t getTime(int year, int mon, int day, int hour, int min) {
+		tm result = { 0, min, hour, day, mon - 1, year - 1900, 0, 0, -1 };
+		return mktime(&result);
+	}
+};
+
 class TestableMailSender : public MailSender {
 public:
 	void sendMail(Schedule* schedule) override {
@@ -134,4 +168,26 @@ TEST_F(BookingItem, sendEmailToHasEmail) {
 	bookingScheduler.addSchedule(schedule);
 
 	EXPECT_EQ(1, testableMailSender.getCountSendMailMethodIsCalled());
+}
+
+TEST_F(BookingItem, sundayException) {
+	BookingScheduler* bookingScheduler = new SundayBookingScheduler{ CAPACITY_PER_HOUR };
+
+	try {
+		Schedule *schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
+		bookingScheduler->addSchedule(schedule);
+		FAIL();
+	}
+	catch (std::runtime_error& e) {
+		EXPECT_EQ(string{ e.what() }, string{ "Booking system is not available on sunday" });
+	}
+}
+
+TEST_F(BookingItem, notSunday) {
+	BookingScheduler* bookingScheduler = new MondayBookingScheduler{ CAPACITY_PER_HOUR };
+
+	Schedule* schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
+	bookingScheduler->addSchedule(schedule);
+
+	EXPECT_EQ(true, bookingScheduler->hasSchedule(schedule));
 }
