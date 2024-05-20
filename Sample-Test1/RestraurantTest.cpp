@@ -23,3 +23,23 @@ TEST(BookingSchedulerTest, Exception) {
 		}, std::runtime_error);
 	EXPECT_EQ(1, 1);
 }
+
+TEST(BookingSchedulerTest, Normal) {
+	tm notOnTheHour = { 0 };
+	notOnTheHour.tm_year = 2021 - 1900;
+	notOnTheHour.tm_mon = 03 - 1;
+	notOnTheHour.tm_mday = 26;
+	notOnTheHour.tm_hour = 9;
+	notOnTheHour.tm_min = 0;
+	notOnTheHour.tm_isdst = -1;
+	mktime(&notOnTheHour);
+
+	Customer customer{ "Fake name", "010-1234-5678" };
+	Schedule* schedule = new Schedule{ notOnTheHour, 1, customer };
+	BookingScheduler bookingScheduler{ 3 };
+
+	
+	bookingScheduler.addSchedule(schedule);
+
+	EXPECT_EQ(true, bookingScheduler.hasSchedule(schedule));
+}
