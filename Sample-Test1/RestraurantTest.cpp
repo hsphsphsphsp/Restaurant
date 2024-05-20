@@ -6,38 +6,19 @@
 
 using namespace testing;
 
-class SundayBookingScheduler : public BookingScheduler {
+class TestableBookingScheduler : public BookingScheduler {
 public:
-	SundayBookingScheduler(int capacityPerHour) :
-		BookingScheduler{capacityPerHour}
-	{}
+	TestableBookingScheduler(int capacityPerHour, tm dateTime) :
+		BookingScheduler(capacityPerHour),
+		dateTime(dateTime) {
+	}
 
 	time_t getNow() override {
-		return getTime(2021, 3, 28, 17, 0);
+		return mktime(&dateTime);
 	}
 
 private:
-	time_t getTime(int year, int mon, int day, int hour, int min) {
-		tm result = { 0, min, hour, day, mon - 1, year - 1900, 0, 0, -1 };
-		return mktime(&result);
-	}
-};
-
-class MondayBookingScheduler : public BookingScheduler {
-public:
-	MondayBookingScheduler(int capacityPerHour) :
-		BookingScheduler{ capacityPerHour }
-	{}
-
-	time_t getNow() override {
-		return getTime(2024, 6, 3, 17, 0);
-	}
-
-private:
-	time_t getTime(int year, int mon, int day, int hour, int min) {
-		tm result = { 0, min, hour, day, mon - 1, year - 1900, 0, 0, -1 };
-		return mktime(&result);
-	}
+	tm dateTime;
 };
 
 class TestableMailSender : public MailSender {
@@ -171,7 +152,7 @@ TEST_F(BookingItem, sendEmailToHasEmail) {
 }
 
 TEST_F(BookingItem, sundayException) {
-	BookingScheduler* bookingScheduler = new SundayBookingScheduler{ CAPACITY_PER_HOUR };
+	BookingScheduler* bookingScheduler = new TestableBookingScheduler{ CAPACITY_PER_HOUR, getTime(2021, 3, 28, 17, 0) };
 
 	try {
 		Schedule *schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
@@ -184,7 +165,7 @@ TEST_F(BookingItem, sundayException) {
 }
 
 TEST_F(BookingItem, notSunday) {
-	BookingScheduler* bookingScheduler = new MondayBookingScheduler{ CAPACITY_PER_HOUR };
+	BookingScheduler* bookingScheduler = new TestableBookingScheduler{ CAPACITY_PER_HOUR, getTime(2024, 6, 3, 17, 0) };
 
 	Schedule* schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
 	bookingScheduler->addSchedule(schedule);
