@@ -6,11 +6,27 @@
 
 using namespace testing;
 
+class TestableSmsSender : public SmsSender {
+public:
+	void send(Schedule* schedule) override {
+		std::cout << "TestableSmsSender's send function" << std::endl;
+		sendMethodIsCalled = true;
+	}
+
+	bool isSendMethodIsCalled() {
+		return sendMethodIsCalled;
+	}
+private:
+	bool sendMethodIsCalled;
+};
+
 class BookingItem : public Test {
 protected:
 	void SetUp() override {
 		NOT_ON_THE_HOUR = getTime(2021, 3, 26, 9, 5);
 		ON_THE_HOUR = getTime(2021, 3, 26, 9, 0);
+
+		bookingScheduler.setSmsSender(&testableSmsSender);
 	}
 public:
 	tm getTime(int year, int mon, int day, int hour, int min) {
@@ -32,6 +48,7 @@ public:
 	const int CAPACITY_PER_HOUR = 3;
 
 	BookingScheduler bookingScheduler{ CAPACITY_PER_HOUR };
+	TestableSmsSender testableSmsSender;
 };
 
 TEST_F(BookingItem, Exception) {
@@ -79,6 +96,12 @@ TEST_F(BookingItem, checkCapacityOnDifferentTime) {
 }
 
 TEST_F(BookingItem, checkSendMail) {
+	Schedule* schedule = new Schedule{ ON_THE_HOUR, CAPACITY_PER_HOUR, CUSTOMER };
+	
+
+	bookingScheduler.addSchedule(schedule);
+
+	EXPECT_EQ(true, testableSmsSender.isSendMethodIsCalled());
 }
 
 TEST_F(BookingItem, notSendEmailToHasNoEmail) {
